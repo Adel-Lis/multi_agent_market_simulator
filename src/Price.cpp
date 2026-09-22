@@ -11,6 +11,6 @@ namespace cda {
     }
 
     double to_price(Tick ticks) {
-        return static_cast<double>(ticks) * kTickSize;
+       return static_cast<double>(ticks) * kTickSize;
     }
 }

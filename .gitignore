@@ -1,0 +1,5 @@
+cmake-build-*/
+.idea/
+sim
+sim.exe
+out/
