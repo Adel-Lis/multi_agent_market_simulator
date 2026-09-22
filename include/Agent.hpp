@@ -20,7 +20,7 @@ namespace cda
         Agent(std::uint32_t id, const Config& cfg, Rng& rng);
 
         std::optional<Order> decide(const MarketState& market, const Config& cfg, Rng& rng,
-                                    std::uint64_t order_id);
+                                    std::uint64_t order_id) const;
 
         double expected_return(const MarketState& market, const Config& cfg, double epsilon) const;
 

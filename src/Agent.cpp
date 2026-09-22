@@ -4,6 +4,7 @@
 
 #include "Agent.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <random>
 
@@ -45,14 +46,17 @@ namespace cda
         return inv_sum_ * (g1_ * fundamental + g2_ * chartist + n_ * epsilon);
     }
 
-    std::optional<Order> Agent::decide(const MarketState& market, const Config& cfg, Rng& rng, std::uint64_t order_id)
+    std::optional<Order> Agent::decide(const MarketState& market, const Config& cfg, Rng& rng,
+                                       std::uint64_t order_id) const
     {
         std::normal_distribution<double> eps_dist{0.0, cfg.sigma_eps};
         std::uniform_real_distribution<double> k_dist{0.0, cfg.k_max};
 
         const double r_hat = expected_return(market, cfg, eps_dist(rng));
 
-        const double expected_price = market.price * std::exp(r_hat * horizon_);
+        double total = r_hat * horizon_;
+        total = std::clamp(total, -cfg.max_log_move, cfg.max_log_move);
+        const double expected_price = market.price * std::exp(total);
         const double k = k_dist(rng);
 
         Order order{};

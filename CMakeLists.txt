@@ -18,6 +18,8 @@ add_library(cda_core STATIC
         include/Config.hpp
         include/MarketState.hpp
         include/Agent.hpp
+        include/Simulation.hpp
+        src/Simulation.cpp
 )
 target_include_directories(cda_core PUBLIC include)
 target_compile_options(cda_core PRIVATE -Wall -Wextra)
