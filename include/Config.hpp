@@ -1,0 +1,37 @@
+//
+// Adel Lis created Config on 22/09/2026.
+//
+
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+
+namespace cda
+{
+    struct Config
+    {
+        std::size_t n_agents = 100;
+
+        double fundamental_price = 100.0; // p_f
+        double tau_f = 50.0; // mean-reversion time of the fundamental term
+        double sigma_eps = 0.05; // std dev of the noise shock
+        double k_max = 0.10; // maximum price shading
+
+        // Spread of the weight distributions: each trader draws its weights from
+        // U(0, sigma) once, at birth. These set the character of the population.
+        double sigma_fundamental = 1.0; // spread of g1
+        double sigma_chartist = 1.5; // spread of g2
+        double sigma_noise = 1.0; // spread of n
+
+        std::size_t min_memory = 5; // smallest L_i
+        std::size_t max_memory = 50; // largest L_i
+
+        double min_horizon = 5.0; // smallest tau_i
+        double max_horizon = 50.0; // largest tau_i
+
+        std::uint64_t order_lifetime = 20; // steps before an unfilled order expires
+        std::uint64_t n_steps = 50'000; // length of the simulation
+        std::uint64_t seed = 413;
+    };
+}
