@@ -36,7 +36,7 @@ std::uint64_t level_depth(const Book& book, Tick price) {
     return total;
 }
 
-} // anonymus namespace
+} // anonymous namespace
 
 void OrderBook::print(std::ostream& os) const {
 	os << std::fixed << std::setprecision(2);
