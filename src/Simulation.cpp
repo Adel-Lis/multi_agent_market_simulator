@@ -55,6 +55,10 @@ namespace cda
 
     void Simulation::seed_book()
     {
+        if (cfg_.initial_depth == 0) return;
+
+        const std::uint32_t seed_trader = static_cast<std::uint32_t>(cfg_.n_agents);
+
         std::uniform_real_distribution<double> offset{0.0, cfg_.initial_band};
 
         for (std::size_t i = 0; i < cfg_.initial_depth; ++i)
@@ -63,22 +67,35 @@ namespace cda
 
             Order bid{};
             bid.id = next_order_id_++;
-            bid.trader_id = 0;
+            bid.trader_id = seed_trader;
             bid.side = Side::Buy;
             bid.price = bid_to_ticks(cfg_.fundamental_price * (1.0 - d));
             bid.quantity = 1;
             bid.timestamp = 0;
             book_.insert(bid);
+            pending_expiry_.emplace_back(0, bid.id);
 
             Order ask{};
             ask.id = next_order_id_++;
-            ask.trader_id = 0;
+            ask.trader_id = seed_trader;
             ask.side = Side::Sell;
             ask.price = ask_to_ticks(cfg_.fundamental_price * (1.0 + d));
             ask.quantity = 1;
             ask.timestamp = 0;
             book_.insert(ask);
+            pending_expiry_.emplace_back(0, ask.id);
         }
+    }
+
+    double Simulation::reference_price() const
+    {
+        const auto bb = book_.best_bid();
+        const auto ba = book_.best_ask();
+
+        if (bb && ba) return 0.5 * (to_price(*bb) + to_price(*ba));
+        if (bb) return to_price(*bb);
+        if (ba) return to_price(*ba);
+        return price_;
     }
 
     void Simulation::expire_orders(std::uint64_t t)
@@ -108,39 +125,27 @@ namespace cda
 
         if (auto order = agent.decide(market, cfg_, rng_, next_order_id_))
         {
-            // --- TEMPORARY DIAGNOSTIC ---
-            if (t <= 200)
-            {
-                const auto bb = book_.best_bid();
-                const auto ba = book_.best_ask();
-                std::cerr << t
-                    << (order->side == Side::Buy ? " BUY  " : " SELL ")
-                    << to_price(order->price)
-                    << "  p=" << price_
-                    << "  bid=" << (bb ? to_price(*bb) : 0.0)
-                    << "  ask=" << (ba ? to_price(*ba) : 0.0)
-                    << "  n=" << book_.order_count()
-                    << '\n';
-            }
-            // --- END DIAGNOSTIC ---
-
             ++next_order_id_;
             ++stats_.orders;
 
             const auto trades = book_.insert(*order);
             pending_expiry_.emplace_back(t, order->id);
 
-            for (const auto& [id, price, quantity, timestamp, buyer_id, seller_id] : trades)
+            for (const Trade& tr : trades)
             {
-                trades_csv << id << "," << timestamp << "," << to_price(price) << "," << quantity << "," << buyer_id
-                    <<
-                    "," << seller_id << '\n';
+                trades_csv << tr.id << ',' << tr.timestamp << ','
+                    << to_price(tr.price) << ',' << tr.quantity << ','
+                    << tr.buyer_id << ',' << tr.seller_id << '\n';
             }
 
             if (!trades.empty())
             {
                 price_ = std::max(to_price(trades.back().price), cfg_.min_price);
                 for (const Trade& tr : trades) stats_.volume += tr.quantity;
+            }
+            else
+            {
+                ++stats_.passive;
             }
 
             n_trades_this_step = trades.size();
@@ -155,16 +160,17 @@ namespace cda
         const auto ba = book_.best_ask();
         if (!bb || !ba) ++stats_.steps_no_quote;
 
-        quotes_csv << t << "," << price_ << ",";
+        quotes_csv << t << ',' << price_ << ',';
         write_optional_price(quotes_csv, bb);
-        quotes_csv << ",";
+        quotes_csv << ',';
         write_optional_price(quotes_csv, ba);
-        quotes_csv << ",";
+        quotes_csv << ',';
         write_optional_price(quotes_csv, book_.spread());
-        quotes_csv << "," << (bb ? book_.depth_at(Side::Buy, *bb) : 0) << "," << (
-                ba ? book_.depth_at(Side::Sell, *ba) : 0) << "," << book_.order_count() << "," << n_trades_this_step
-            <<
-            '\n';
+        quotes_csv << ','
+            << (bb ? book_.depth_at(Side::Buy, *bb) : 0) << ','
+            << (ba ? book_.depth_at(Side::Sell, *ba) : 0) << ','
+            << book_.order_count() << ','
+            << n_trades_this_step << '\n';
     }
 
     RunStats Simulation::run(const std::string& trades_path, const std::string& quotes_path)
@@ -194,6 +200,9 @@ namespace cda
 
         stats_.steps = cfg_.n_steps;
         stats_.final_price = price_;
+
+        for (const Agent& a : agents_) stats_.clamped += a.clamp_hits();
+
         return stats_;
     }
 }

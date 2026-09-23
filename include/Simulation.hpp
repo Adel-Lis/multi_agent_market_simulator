@@ -28,6 +28,8 @@ namespace cda
         double final_price = 0.0;
         double min_price = 0.0;
         double max_price = 0.0;
+        std::uint64_t clamped = 0;
+        std::uint64_t passive = 0;
     };
 
     class Simulation
@@ -44,6 +46,7 @@ namespace cda
         void step(std::uint64_t t, std::ostream& trades_csv, std::ostream& quotes_csv);
         void expire_orders(std::uint64_t t);
         void seed_book();
+        double reference_price() const;
 
         Config cfg_;
         Rng rng_;

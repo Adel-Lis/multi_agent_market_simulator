@@ -8,7 +8,7 @@
 namespace cda
 {
     using Tick = std::int64_t;
-    constexpr double kTickSize = 0.01;
+    inline constexpr double kTickSize = 0.01;
 
     Tick to_ticks(double price);
     double to_price(Tick ticks);

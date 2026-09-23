@@ -269,8 +269,8 @@ namespace
     void test_bid_and_ask_rounding_are_conservative()
     {
         // 100.376 sits between the ticks 100.37 and 100.38.
-        CHECK(bid_to_ticks(100.376) == 10037); // down
-        CHECK(ask_to_ticks(100.376) == 10038); // up
+        CHECK(bid_to_ticks(100.376) == 10037);
+        CHECK(ask_to_ticks(100.376) == 10038);
         CHECK(bid_to_ticks(100.374) == 10037);
         CHECK(ask_to_ticks(100.374) == 10038);
     }
