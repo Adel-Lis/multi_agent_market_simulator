@@ -32,6 +32,15 @@ namespace
             "  --max-move X         cap on the per-order log price move\n"
             "  --out TAG            write out/trades_TAG.csv and out/quotes_TAG.csv\n";
     }
+
+    std::uint64_t parse_u64(const std::string& s)
+    {
+        if (!s.empty() && s[0] == '-')
+        {
+            throw std::invalid_argument("negative value");
+        }
+        return std::stoull(s);
+    }
 } // anonymous namespace
 
 int main(int argc, char* argv[])
@@ -60,17 +69,17 @@ int main(int argc, char* argv[])
                 trades_path = "out/trades_" + value + ".csv";
                 quotes_path = "out/quotes_" + value + ".csv";
             }
-            else if (key == "--steps") cfg.n_steps = std::stoull(value);
-            else if (key == "--agents") cfg.n_agents = std::stoull(value);
-            else if (key == "--seed") cfg.seed = std::stoull(value);
-            else if (key == "--lifetime") cfg.order_lifetime = std::stoull(value);
+            else if (key == "--steps") cfg.n_steps = parse_u64(value);
+            else if (key == "--agents") cfg.n_agents = parse_u64(value);
+            else if (key == "--seed") cfg.seed = parse_u64(value);
+            else if (key == "--lifetime") cfg.order_lifetime = parse_u64(value);
             else if (key == "--sigma-eps") cfg.sigma_eps = std::stod(value);
             else if (key == "--sigma-chartist") cfg.sigma_chartist = std::stod(value);
             else if (key == "--sigma-fund") cfg.sigma_fundamental = std::stod(value);
             else if (key == "--kmax") cfg.k_max = std::stod(value);
             else if (key == "--tau-f") cfg.tau_f = std::stod(value);
             else if (key == "--max-move") cfg.max_log_move = std::stod(value);
-            else if (key == "--tau-max") cfg.max_horizon = static_cast<std::uint32_t>(std::stoull(value));
+            else if (key == "--tau-max") cfg.max_horizon = static_cast<std::uint32_t>(parse_u64(value));
             else
             {
                 std::cerr << "error: unknown option " << key << "\n\n";

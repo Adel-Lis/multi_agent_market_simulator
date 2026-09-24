@@ -20,6 +20,7 @@ add_library(cda_core STATIC
         include/Agent.hpp
         include/Simulation.hpp
         src/Simulation.cpp
+        src/Config.cpp
 )
 target_include_directories(cda_core PUBLIC include)
 target_compile_options(cda_core PRIVATE -Wall -Wextra)

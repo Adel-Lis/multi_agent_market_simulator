@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
 from scipy import stats
+from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.tsa.stattools import acf
 
 # Load data
@@ -57,9 +58,17 @@ def acf_with_band(x: np.ndarray, nlags: int) -> tuple[np.ndarray, float]:
     return values, band
 
 
-def last_significant_lag(values: np.ndarray, band: float) -> int:
-    above = np.flatnonzero(values > band)
-    return int(above[-1]) + 1 if above.size else 0
+def clustering_horizon(values: np.ndarray, band: float, run: int = 5) -> int:
+    """Last lag before `run` consecutive lags fall within the band.
+
+    Only positive excursions count: a negative autocorrelation is not
+    clustering. Returns 0 if the series never clusters.
+    """
+    inside = np.abs(values) <= band
+    for i in range(len(values) - run + 1):
+        if inside[i:i + run].all():
+            return i
+    return len(values)
 
 
 # Figures
@@ -122,6 +131,7 @@ def fig_autocorrelation(returns: np.ndarray, path: Path, nlags: int = 300) -> No
     a_r, band = acf_with_band(returns, nlags)
     a_abs, _ = acf_with_band(np.abs(returns), nlags)
     lags = np.arange(1, nlags + 1)
+    h = clustering_horizon(a_abs, band)
 
     fig, ax = plt.subplots(figsize=(11, 4.5))
     ax.axhspan(-band, band, color="0.85", label="95% white-noise band")
@@ -132,8 +142,8 @@ def fig_autocorrelation(returns: np.ndarray, path: Path, nlags: int = 300) -> No
     ax.set_ylabel("autocorrelation")
     ax.legend(frameon=False)
     ax.set_title(
-        f"raw returns uncorrelated, absolute returns persistent "
-        f"(significant to lag {last_significant_lag(a_abs, band)})"
+        f"acf(r,1) = {a_r[0]:+.3f}   acf(|r|,1) = {a_abs[0]:+.3f}   "
+        f"clustering horizon {h} lags"
     )
 
     fig.tight_layout()
@@ -171,8 +181,24 @@ def report(quotes: pl.DataFrame, trades: pl.DataFrame, p_f: float = 100.0) -> No
     print(f"  acf(|r|, 1)           {a_abs[0]:+.4f}")
     print(f"  acf(|r|, 10)          {a_abs[9]:+.4f}")
     print(f"  acf(|r|, 50)          {a_abs[49]:+.4f}")
-    print(f"  significant to lag    {last_significant_lag(a_abs, band)}  "
-          f"(95% band +/-{band:.4f})")
+    print(f"  clustering horizon    {clustering_horizon(a_abs, band)} lags")
+
+    print("\n  Ljung-Box (two-sided: rejects on negative correlation too)")
+
+    lags = [10, 20, 50, 100]
+    lb_r = acorr_ljungbox(r_step, lags=lags, return_df=True)
+    lb_abs = acorr_ljungbox(np.abs(r_step), lags=lags, return_df=True)
+    print(f"  {'m':>5} {'p(r)':>12} {'p(|r|)':>12}")
+    for m in lags:
+        print(f"  {m:>5} {lb_r.loc[m, 'lb_pvalue']:12.2e} "
+              f"{lb_abs.loc[m, 'lb_pvalue']:12.2e}")
+
+    # Ljung-Box cannot distinguish clustering from bid-ask bounce, so report
+    # the signed lag-1 terms and how much of the statistic they contribute.
+    share = 10 * a_abs[0] ** 2 / sum((10 - k) * a_abs[k] ** 2 for k in range(10))
+    print(f"\n  acf(|r|, 1) is {a_abs[0]:+.4f} and supplies "
+          f"{100 * share:.0f}% of the m=10 statistic")
+    print("  A negative lag 1 means depletion, not clustering.")
 
 
 # Main

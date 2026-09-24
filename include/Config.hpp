@@ -6,6 +6,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <limits>
 
 namespace cda
 {
@@ -48,5 +50,8 @@ namespace cda
         // Not in the paper: the book starts empty there, and does so here too.
         std::size_t initial_depth = 0;
         double initial_band = 0.02;
+
+        // @throws std::invalid_argument if any parameter is unusable
+        void validate() const;
     };
 }
