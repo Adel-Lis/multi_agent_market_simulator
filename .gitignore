@@ -4,3 +4,4 @@ sim
 sim.exe
 out/
 analysis/.venv
+analysis/figures

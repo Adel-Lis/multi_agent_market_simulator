@@ -1,2 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module classpath="CMake" type="CPP_MODULE" version="4" />
+<module classpath="CMake" type="CPP_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="Python" name="Python facet">
+      <configuration sdkName="Python 3.12 virtualenv at C:\Users\lisad\OneDrive\Desktop\multi_agent_continuous_double_auction_market_simulator\cda-sim\analysis\.venv" />
+    </facet>
+  </component>
+</module>
