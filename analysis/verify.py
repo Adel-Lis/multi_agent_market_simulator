@@ -64,7 +64,7 @@ def clustering_horizon(values: np.ndarray, band: float, run: int = 5) -> int:
     Only positive excursions count: a negative autocorrelation is not
     clustering. Returns 0 if the series never clusters.
     """
-    inside = np.abs(values) <= band
+    inside = values <= band
     for i in range(len(values) - run + 1):
         if inside[i:i + run].all():
             return i

@@ -121,7 +121,10 @@ int main(int argc, char* argv[])
             << "\norders rested     " << s.passive
             << "\norders expired    " << s.expiries
             << "\nclamp bound on    " << s.clamped
-            << " (" << (100.0 * s.clamped / orders) << "%)"
+            << " (" << (100.0 * s.clamped / orders) << "% of orders)"
+            << "\norders dropped    " << s.dropped
+            << " (" << (100.0 * s.dropped / static_cast<double>(s.steps))
+            << "% of steps, unrepresentable price)"
             << "\nsteps w/o 2 sides " << s.steps_no_quote
             << " (" << (100.0 * s.steps_no_quote / s.steps) << "%)"
             << "\nprice range       " << s.min_price << " .. " << s.max_price

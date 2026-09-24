@@ -30,6 +30,7 @@ namespace cda
         double max_price = 0.0;
         std::uint64_t clamped = 0;
         std::uint64_t passive = 0;
+        std::uint64_t dropped = 0;
     };
 
     class Simulation

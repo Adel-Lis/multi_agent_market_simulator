@@ -84,7 +84,11 @@ namespace cda
             return std::nullopt;
         }
 
-        if (order.price <= 0) return std::nullopt;
+        if (order.price <= 0)
+        {
+            ++dropped_orders_;
+            return std::nullopt;
+        }
 
         return order;
     }

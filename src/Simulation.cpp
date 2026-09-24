@@ -26,16 +26,9 @@ namespace cda
     Simulation::Simulation(Config cfg) : cfg_(cfg), rng_(cfg_.seed), log_prices_(cfg.max_memory + 1),
                                          price_(cfg.fundamental_price)
     {
-        if (cfg.n_agents == 0)
-        {
-            throw std::invalid_argument("Simulation::Simulation(): n_agents is 0. It must be positive");
-        }
-        if (cfg.min_memory > cfg.max_memory)
-        {
-            throw std::invalid_argument("Simulation::Simulation(): min_memory exceeds max_memory");
-        }
-
+        cfg_.validate();
         agents_.reserve(cfg.n_agents);
+
         for (std::uint32_t i = 0; i < cfg_.n_agents; ++i)
         {
             agents_.emplace_back(i, cfg_, rng_);
@@ -201,7 +194,11 @@ namespace cda
         stats_.steps = cfg_.n_steps;
         stats_.final_price = price_;
 
-        for (const Agent& a : agents_) stats_.clamped += a.clamp_hits();
+        for (const Agent& a : agents_)
+        {
+            stats_.clamped += a.clamp_hits();
+            stats_.dropped += a.dropped_orders();
+        }
 
         return stats_;
     }

@@ -32,6 +32,7 @@ namespace cda
         std::uint32_t horizon() const { return horizon_; }
         double shading() const { return k_; }
         std::uint64_t clamp_hits() const { return clamp_hits_; }
+        std::uint64_t dropped_orders() const { return dropped_orders_; }
 
     private:
         std::uint32_t id_ = 0;
@@ -44,5 +45,6 @@ namespace cda
         std::uint32_t horizon_ = 1;
 
         std::uint64_t clamp_hits_ = 0;
+        std::uint64_t dropped_orders_ = 0;
     };
 }
