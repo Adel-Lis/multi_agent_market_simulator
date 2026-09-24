@@ -84,16 +84,19 @@ namespace
         Config cfg;
         Rng rng{1};
 
+        int contrarians = 0;
         for (std::uint32_t i = 0; i < 200; ++i)
         {
             Agent a{i, cfg, rng};
             CHECK(a.id() == i);
-            CHECK(a.weight_fundamental() >= 0.0 && a.weight_fundamental() <= cfg.sigma_fundamental);
-            CHECK(a.weight_chartist() >= 0.0 && a.weight_chartist() <= cfg.sigma_chartist);
-            CHECK(a.weight_noise() >= 0.0 && a.weight_noise() <= cfg.sigma_noise);
+            CHECK(a.weight_fundamental() >= 0.0);
+            CHECK(std::isfinite(a.weight_chartist()));
+            CHECK(a.shading() >= 0.0 && a.shading() <= cfg.k_max);
             CHECK(a.memory() >= cfg.min_memory && a.memory() <= cfg.max_memory);
             CHECK(a.horizon() >= cfg.min_horizon && a.horizon() <= cfg.max_horizon);
+            if (a.weight_chartist() < 0.0) ++contrarians;
         }
+        CHECK(contrarians > 0 && contrarians < 200);
     }
 
     void test_population_is_heterogeneous()
@@ -139,18 +142,16 @@ namespace
         cfg.fundamental_price = 102.0;
         cfg.tau_f = 50.0;
         cfg.sigma_fundamental = 1.0;
-        cfg.sigma_chartist = 0.0; // force a pure fundamentalist
-        cfg.sigma_noise = 0.0;
+        cfg.sigma_chartist = 1e-12; // force a pure fundamentalist
 
         Rng rng{5};
         Agent a{0, cfg, rng};
-        REQUIRE(a.weight_chartist() == 0.0);
-        REQUIRE(a.weight_noise() == 0.0);
+        REQUIRE(close(a.weight_chartist(), 0.0));
 
         const auto history = flat_history(100.0, 60);
         const MarketState market{100.0, history, 1};
 
-        const double expected = std::log(102.0 / 100.0) / 50.0;
+        const double expected = a.weight_fundamental() * std::log(102.0 / 100.0) / 50.0;
         CHECK(close(a.expected_return(market, cfg, 0.0), expected));
     }
 
@@ -158,8 +159,8 @@ namespace
     {
         Config cfg;
         cfg.fundamental_price = 100.0;
-        cfg.sigma_chartist = 0.0;
-        cfg.sigma_noise = 0.0;
+        cfg.sigma_chartist = 1e-12;
+        cfg.sigma_eps = 1e-12;
 
         Rng rng{11};
         Agent a{0, cfg, rng};
@@ -187,14 +188,15 @@ namespace
     {
         Config cfg;
         cfg.fundamental_price = 100.0;
-        cfg.sigma_fundamental = 0.0; // pure chartist
+        cfg.sigma_fundamental = 1e-12; // pure chartist
         cfg.sigma_chartist = 1.0;
-        cfg.sigma_noise = 0.0;
+        cfg.sigma_eps = 1e-12;
         cfg.min_memory = 10;
         cfg.max_memory = 10;
 
         Rng rng{3};
         Agent a{0, cfg, rng};
+        while (a.weight_chartist() <= 0.0) a = Agent{0, cfg, rng};
         REQUIRE(a.memory() == 10);
 
         // A steadily rising market: each step is +1%.
@@ -209,7 +211,7 @@ namespace
         const MarketState market{std::exp(rising.ago(0)), rising, 20};
 
         // The average log return over 10 steps is ln(1.01).
-        CHECK(close(a.expected_return(market, cfg, 0.0), std::log(1.01), 1e-9));
+        CHECK(close(a.expected_return(market, cfg, 0.0), a.weight_chartist() * std::log(1.01), 1e-9));
         CHECK(a.expected_return(market, cfg, 0.0) > 0.0); // extrapolates upward
 
         const auto order = a.decide(market, cfg, rng, 1);
@@ -220,9 +222,8 @@ namespace
     void test_chartist_is_silent_without_enough_history()
     {
         Config cfg;
-        cfg.sigma_fundamental = 0.0;
+        cfg.sigma_fundamental = 1e-12;
         cfg.sigma_chartist = 1.0;
-        cfg.sigma_noise = 0.0;
         cfg.min_memory = 30;
         cfg.max_memory = 30;
 
@@ -240,8 +241,8 @@ namespace
     {
         Config cfg;
         cfg.fundamental_price = 110.0;
-        cfg.sigma_chartist = 0.0;
-        cfg.sigma_noise = 0.0;
+        cfg.sigma_chartist = 1e-12;
+        cfg.sigma_eps = 1e-12;
         cfg.k_max = 0.05;
 
         Rng rng{9};
